@@ -35,5 +35,20 @@ class FactorsZoo(object):
 
     class Mom:
 
+        def __init__(self, date, stockCodes):
+            """
+
+            :param date:  "YYYY-MM-DD"
+            :param stockCodes: List
+            """
+            if not isinstance(date, str):
+                print("日期格式不对")
+            elif not isinstance(stockCodes, list):
+                print("代码格式不对")
+            else:
+                self.date = date
+                self.stockCodes = stockCodes
+                self.windLabel = "Mom"
+
 
 
