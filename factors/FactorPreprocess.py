@@ -1,10 +1,13 @@
 """
 包含一切因子预处理的工具，中性化，缺失值填充，异常值诊断剔除，因子alpha预测，beta估计等。
 """
+from WindPy import *
 import pandas as pd
 from sklearn import linear_model
 import statsmodels.api as sm
 import numpy as np
+
+
 class FactorProcess:
 
     @classmethod
@@ -49,8 +52,10 @@ class FactorProcess:
         :param window:  窗口  int
         :return:  list
         """
-        pre_date = "计算向前推移一个窗口对应的交易日日期"
-        alpha = "根据上面的日期提取pre_date后的每个股票的收益情况"
+        pre_date = w.tdaysoffset(window, date, "Period=M")
+        pre_date = pre_date.Data[0][0].strftime("%Y-%m-%d")
+        alpha_data = w.wss(stockcodes, "pct_chg_per", "startDate=" + pre_date + ";endDate=" + date)
+        alpha = alpha_data.Data[0]
         return alpha
 
 
