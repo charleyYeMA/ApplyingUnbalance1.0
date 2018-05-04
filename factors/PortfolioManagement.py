@@ -1,13 +1,15 @@
 """
 研究出超额收益的因子后，下一步就是讲超额收益的因子转换成一个对应的组合，这类方法很多，可以在该脚本是任意扩展
 """
-from FactorPrerprocess import neutralize_factor, get_alpha, calac_beta, forcast_alpha
-from FactorStyleProcess import FactorStyle
-import StockPool
+from WindPy import *
+from .FactorPreprocess  import FactorProcess
+from .FactorStyleProcess import FactorStyle
+from .StockPool import StockPool
 import pandas as pd
 import numpy as np
 
 from pandas import DataFrame
+w.start()
 class PortfolioManagement:
     """
 
@@ -40,11 +42,11 @@ class PortfolioManagement:
             window = self.window
             factors = self.factors
             if not self.Neutral:
-                df = neutralize_factor(df, factors)
-                alpha_hat = get_alpha(stockcodes, date, window)
-                coef_ = calac_beta(alpha_hat, df, factors)
-                df1 = neutralize_factor(df1, factors)
-                alpha = forcast_alpha(coef_, df1, factors)
+                df = FactorProcess.neutralize_factor(df, factors)
+                alpha_hat = FactorProcess.get_alpha(stockcodes, date, window)
+                coef_ = FactorProcess.calac_beta(alpha_hat, df, factors)
+                df1 = FactorProcess.neutralize_factor(df1, factors)
+                alpha = FactorProcess.forcast_alpha(coef_, df1, factors)
             df1['Alpha'] = alpha
             stock = df1.sort_values(['Alpha'], ascending=False).head(50)
 
@@ -65,8 +67,12 @@ class PortfolioManagement:
             根据每个因子的风格收益，来配置不同的权重，核心是根据凯利公司法则
             :return: 返回基于kelly公式计算的每个因子的权重
             """
-            pre_date = self.date - self.window  # 根据实际需要改写
-            tradedays = [pre_date: date : "BM"] # 按月度生产交易日
+
+            pre_date_data = w.tdaysoffset(-self.window, self.date, "Period=M")
+            pre_date = pre_date_data.Data[0][0].strftime("%Y-%m-%d")
+            tradedays_data = w.tdays(pre_date, self.date, "Period=M")
+            tradedayslist = tradedays_data[0]
+            tradedays = [td.strftime("%Y-%m-%d") for td in tradedayslist]
 
             # 提取因子数据
             style_return = DataFrame()
@@ -75,7 +81,7 @@ class PortfolioManagement:
                 for dt in tradedays:
                     stockcodes = StockPool(dt).select_stock()
                     f_data = f(dt, stockcodes).getdata()
-                    f_ret = get_alpha(stockcodes, dt, -1) # 选取一个月的alpha
+                    f_ret = FactorProcess.get_alpha(stockcodes, dt, -1) # 选取一个月的alpha
                     df = DataFrame(data = [f_data, f_ret], columns=[f.windLabel, 'ret'])
                     long_only, long_short = FactorStyle.compute_style_return_month(df, f.windLabel)
                     f_data.append(long_only)
@@ -100,8 +106,11 @@ class PortfolioManagement:
             根据每个因子的风格收益，来配置不同的权重，核心是根据凯利公司法则
             :return: 返回基于kelly公式计算的每个因子的权重
             """
-            pre_date = self.date - self.window  # 根据实际需要改写
-            tradedays = [pre_date: date : "BM"] # 按月度生产交易日
+            pre_date_data = w.tdaysoffset(-self.window, self.date, "Period=M")
+            pre_date = pre_date_data.Data[0][0].strftime("%Y-%m-%d")
+            tradedays_data = w.tdays(pre_date, self.date, "Period=M")
+            tradedayslist = tradedays_data[0]
+            tradedays = [td.strftime("%Y-%m-%d") for td in tradedayslist]
 
             # 提取因子数据
             style_return = DataFrame()
@@ -110,8 +119,8 @@ class PortfolioManagement:
                 for dt in tradedays:
                     stockcodes = StockPool(dt).select_stock()
                     f_data = f(dt, stockcodes).getdata()
-                    f_ret = get_alpha(stockcodes, dt, -1) # 选取一个月的alpha
-                    df = DataFrame(data = [f_data, f_ret], columns=[f.windLabel, 'ret'])
+                    f_ret = FactorProcess.get_alpha(stockcodes, dt, -1)  # 选取一个月的alpha
+                    df = DataFrame(data=[f_data, f_ret], columns=[f.windLabel, 'ret'])
                     long_only, long_short = FactorStyle.compute_style_return_month(df, f.windLabel)
                     f_data.append(long_only)
                 style_return[f.windLabel] = f_data
@@ -140,8 +149,11 @@ class PortfolioManagement:
             根据风格因子的收益和kf预测的结果，计算不同风格的权重
             :return:
             """
-            pre_date = self.date - self.window  # 根据实际需要改写
-            tradedays = [pre_date: date: "BM"]  # 按月度生产交易日
+            pre_date_data = w.tdaysoffset(-self.window, self.date, "Period=M")
+            pre_date = pre_date_data.Data[0][0].strftime("%Y-%m-%d")
+            tradedays_data = w.tdays(pre_date, self.date, "Period=M")
+            tradedayslist = tradedays_data[0]
+            tradedays = [td.strftime("%Y-%m-%d") for td in tradedayslist]
 
             # 提取因子数据
             style_return = DataFrame()
@@ -150,7 +162,7 @@ class PortfolioManagement:
                 for dt in tradedays:
                     stockcodes = StockPool(dt).select_stock()
                     f_data = f(dt, stockcodes).getdata()
-                    f_ret = get_alpha(stockcodes, dt, -1)  # 选取一个月的alpha
+                    f_ret = FactorProcess.get_alpha(stockcodes, dt, -1)  # 选取一个月的alpha
                     df = DataFrame(data=[f_data, f_ret], columns=[f.windLabel, 'ret'])
                     long_only, long_short = FactorStyle.compute_style_return_month(df, f.windLabel)
                     f_data.append(long_only)
@@ -179,8 +191,11 @@ class PortfolioManagement:
             根据每个因子的风格收益，来配置不同的权重，核心是根据凯利公司法则
             :return: 返回基于kelly公式计算的每个因子的权重
             """
-            pre_date = self.date - self.window  # 根据实际需要改写
-            tradedays = [pre_date: date : "BM"] # 按月度生产交易日
+            pre_date_data = w.tdaysoffset(-self.window, self.date, "Period=M")
+            pre_date = pre_date_data.Data[0][0].strftime("%Y-%m-%d")
+            tradedays_data = w.tdays(pre_date, self.date, "Period=M")
+            tradedayslist = tradedays_data[0]
+            tradedays = [td.strftime("%Y-%m-%d") for td in tradedayslist]
 
             # 提取因子数据
             style_return = DataFrame()
@@ -189,8 +204,8 @@ class PortfolioManagement:
                 for dt in tradedays:
                     stockcodes = StockPool(dt).select_stock()
                     f_data = f(dt, stockcodes).getdata()
-                    f_ret = get_alpha(stockcodes, dt, -1) # 选取一个月的alpha
-                    df = DataFrame(data = [f_data, f_ret], columns=[f.windLabel, 'ret'])
+                    f_ret = FactorProcess.get_alpha(stockcodes, dt, -1) # 选取一个月的alpha
+                    df = DataFrame(data=[f_data, f_ret], columns=[f.windLabel, 'ret'])
                     long_only, long_short = FactorStyle.compute_style_return_month(df, f.windLabel)
                     f_data.append(long_only)
                 style_return[f.windLabel] = f_data
@@ -217,8 +232,11 @@ class PortfolioManagement:
             根据每个因子的风格收益，来配置不同的权重，核心是根据凯利公司法则
             :return: 返回基于kelly公式计算的每个因子的权重
             """
-            pre_date = self.date - self.window  # 根据实际需要改写
-            tradedays = [pre_date: date : "BM"] # 按月度生产交易日
+            pre_date_data = w.tdaysoffset(-self.window, self.date, "Period=M")
+            pre_date = pre_date_data.Data[0][0].strftime("%Y-%m-%d")
+            tradedays_data = w.tdays(pre_date, self.date, "Period=M")
+            tradedayslist = tradedays_data[0]
+            tradedays = [td.strftime("%Y-%m-%d") for td in tradedayslist]
 
             # 提取因子数据
             style_return = DataFrame()
@@ -227,7 +245,7 @@ class PortfolioManagement:
                 for dt in tradedays:
                     stockcodes = StockPool(dt).select_stock()
                     f_data = f(dt, stockcodes).getdata()
-                    f_ret = get_alpha(stockcodes, dt, -1) # 选取一个月的alpha
+                    f_ret = FactorProcess.get_alpha(stockcodes, dt, -1) # 选取一个月的alpha
                     df = DataFrame(data = [f_data, f_ret], columns=[f.windLabel, 'ret'])
                     long_only, long_short = FactorStyle.compute_style_return_month(df, f.windLabel)
                     f_data.append(long_only)
@@ -255,9 +273,11 @@ class PortfolioManagement:
             根据风格因子的收益和kf预测的结果，计算不同风格的权重
             :return:
             """
-            pre_date = self.date - self.window  # 根据实际需要改写
-            tradedays = [pre_date: date: "BM"]  # 按月度生产交易日
-
+            pre_date_data = w.tdaysoffset(-self.window, self.date, "Period=M")
+            pre_date = pre_date_data.Data[0][0].strftime("%Y-%m-%d")
+            tradedays_data = w.tdays(pre_date, self.date, "Period=M")
+            tradedayslist = tradedays_data[0]
+            tradedays = [td.strftime("%Y-%m-%d") for td in tradedayslist]
             # 提取因子数据
             style_return = DataFrame()
             for f in self.factors:
@@ -265,7 +285,7 @@ class PortfolioManagement:
                 for dt in tradedays:
                     stockcodes = StockPool(dt).select_stock()
                     f_data = f(dt, stockcodes).getdata()
-                    f_ret = get_alpha(stockcodes, dt, -1)  # 选取一个月的alpha
+                    f_ret = FactorProcess.get_alpha(stockcodes, dt, -1)  # 选取一个月的alpha
                     df = DataFrame(data=[f_data, f_ret], columns=[f.windLabel, 'ret'])
                     long_only, long_short = FactorStyle.compute_style_return_month(df, f.windLabel)
                     f_data.append(long_only)

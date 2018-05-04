@@ -27,16 +27,17 @@ class StockPool:
         status = w.wss(stockdata['Codes'], "trade_status", "tradeDate=" + self.date)
         stockdata['status'] = status.Data[0]
         df = DataFrame(stockdata)
-        df = df[df['status'] == u'正常交易']
+        df = df[df['status'] == u'交易']
         # 剔除涨停的股票
         maxud = w.wss(df['Codes'].values.tolist(), "maxupordown", "tradeDate=" + self.date)
         df['maxud'] = maxud.Data[0]
+
         df = df[df['maxud'] < 1]
         # 剔除上市未满三年的股票
         ipo_days = w.wss(df['Codes'].values.tolist(), "ipo_listdays", "tradeDate=" + self.date)
         df['ipo_days'] = ipo_days.Data[0]
         df = df[df['ipo_days'] > 3 * 365]
 
-        stockcodes = "根据众多股票选择标准，选取的股票代码"
+        stockcodes = df['Codes'].values.tolist()
 
         return stockcodes
