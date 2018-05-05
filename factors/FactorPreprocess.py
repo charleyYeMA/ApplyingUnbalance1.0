@@ -32,6 +32,8 @@ class FactorProcess:
             print("没有行业数据，无法中性化，请添加行业因子")
             raise Exception("没有行业数据，无法中性化，请添加行业因子")
         X = pd.get_dummies(df[industry])
+        factors.remove('industry')
+        df1 = pd.DataFrame()
         for f in factors:
             factor1 = factors.copy()
             y = df[f]
@@ -40,9 +42,9 @@ class FactorProcess:
             X = sm.add_constant(X)
             model = sm.OLS(y, X)
             results = model.fit()
-            df[f] = results.resid
+            df1[f] = results.resid
 
-        return df
+        return df1
 
     def get_alpha(self, stockcodes, date, window):
         """
@@ -87,5 +89,5 @@ class FactorProcess:
         :return:
         """
         x = df1[factors]
-        alpha_f = x.dot(coef_)
+        alpha_f = x.values.dot(coef_.values[1:])
         return alpha_f
