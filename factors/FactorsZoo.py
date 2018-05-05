@@ -23,13 +23,12 @@ class FactorsZoo(object):
         :param data: list
         :return:
         """
-        num1 = [1 for i in data if i is None]
-        num2 = [1 for i in data if i == np.NaN]
-        num = sum(num1) + sum(num2)
+        data = np.array(data)
+        num = np.count_nonzero(data != data)
         if num > len(data)/2:
             print("数据质量较差，请检查数据库")
             raise Exception("数据质量异常")
-        return data
+        return data.tolist()
 
     class Size(Factor):
         def __init__(self, date, stockcodes, label):
@@ -250,8 +249,8 @@ class FactorsZoo(object):
                 pre_year_date = datetime.strptime(date, "%Y-%m-%d") - YearEnd(1)
             else:
                 pre_year_date = datetime.strptime(date, "%Y-%m-%d") - YearEnd(2)
-            pre_year_date = pre_year_date.strftime("%Y-%m-%d")
-            dividend_data = w.wss(self.stockcodes, "div_cashandstock", "rptDate=" + pre_year_date)
+            pre_year_date = pre_year_date.strftime("%Y")
+            dividend_data = w.wss(self.stockcodes, "div_divpct_3yearaccu","year=" + pre_year_date)
             if dividend_data.ErrorCode != 0:
                 print("数据提取异常")
                 raise Exception("数据提取异常")
@@ -387,7 +386,7 @@ class FactorsZoo(object):
             """
             Factor.__init__(self, date, stockcodes, label)
 
-        def getdata(self):
+        def get_data(self):
             """
 
             :return:
@@ -399,13 +398,12 @@ class FactorsZoo(object):
             else:
                 pre_year_date = datetime.strptime(date, "%Y-%m-%d") - YearEnd(2)
             pre_year_date = pre_year_date.strftime("%Y-%m-%d")
-            cash_data = w.wss(self.stockcodes, "stot_cash_inflows_oper_act,stot_cash_outflows_oper_act",
-                              "unit=1;rptDate=" + pre_year_date + ";rptType=1")
+            cash_data = w.wss(self.stockcodes, "net_cash_flows_oper_act", "unit=1;rptDate="+ pre_year_date +";rptType=1")
             if cash_data.ErrorCode != 0:
                 print("数据提取异常")
                 raise Exception("数据提取异常")
-            cash_net = np.array(cash_data.Data[0]) - np.array(cash_data.Data[1])
-            cash_net_oper_act = FactorsZoo.check_data(cash_net.tolist())
+
+            cash_net_oper_act = FactorsZoo.check_data(cash_data.Data[0])
 
             return cash_net_oper_act
 
