@@ -30,6 +30,42 @@ class FactorsZoo(object):
             raise Exception("数据质量异常")
         return data.tolist()
 
+    @staticmethod
+    def deflate_factor(date, stockcodes, label=None):
+        """
+        BE:权益账目价值
+        ME：股票总市值
+        AT：总资产
+        :param label: 选择缩减因子，包括三个BE，ME，AT
+        :return:
+        """
+        date_1 = datetime.strptime(date, "%Y-%m-%d")
+        if date_1.month >= 5:
+            pre_year_date = datetime.strptime(date, "%Y-%m-%d") - YearEnd(1)
+        else:
+            pre_year_date = datetime.strptime(date, "%Y-%m-%d") - YearEnd(2)
+        pre_year_date = pre_year_date.strftime("%Y-%m-%d")
+
+        if label is None:
+            return
+        elif label == "BE":    # 提取权益账目价值
+            be = w.wss(stockcodes, "tot_equity","unit=1;rptDate="+ pre_year_date +";rptType=1")
+            if be.ErrorCode != 0:
+                raise Exception("提取数据异常")
+            deflate_f = be.Data[0]
+        elif label == "ME":    # 提取股票总市值
+            me = w.wss(stockcodes, "mkt_cap_ard","unit=1;tradeDate=" + date)
+            if me.ErrorCode != 0:
+                raise Exception("提取数据异常")
+            deflate_f = me.Data[0]
+
+        elif label == "AT":    # 提取总资产
+            at = w.wss(stockcodes, "wgsd_assets","unit=1;rptDate="+ pre_year_date +";rptType=1;currencyType=")
+            if at.ErrorCode != 0:
+                raise Exception("提取数据异常")
+            deflate_f = at.Data[0]
+        return deflate_f
+
     class Size(Factor):
         def __init__(self, date, stockcodes, label):
             """
@@ -429,6 +465,93 @@ class FactorsZoo(object):
                 raise Exception("数据提取异常")
             industry = FactorsZoo.check_data(industry_data.Data[0])
             return industry
+
+    class CashBasedOperProfit(Factor):
+
+        def __init__(self, date, stockcodes, label):
+            """
+
+            :param date:
+            :param stockCodes:
+            """
+            Factor.__init__(self, date, stockcodes, label)
+
+        def get_data(self):
+            """
+            基于现金的盈利能力 = 营业利润 + 应收账款的减少 + 库存减少 + 应付账款的增长 + 应计负债的增加
+            :return:
+            """
+            date = self.date
+
+            # 提取近两年的应收账款，库存，应付账款，应计负债
+            date_1 = datetime.strptime(date, "%Y-%m-%d")
+            if date_1.month >= 5:
+                pre_year_date = datetime.strptime(date, "%Y-%m-%d") - YearEnd(1)
+                pre_year_date1 = datetime.strptime(date, "%Y-%m-%d") - YearEnd(2)
+            else:
+                pre_year_date = datetime.strptime(date, "%Y-%m-%d") - YearEnd(2)
+                pre_year_date1 = datetime.strptime(date, "%Y-%m-%d") - YearEnd(3)
+
+            # 提取营业利润
+            ebit_oper = w.wss(self.stockcodes, "wgsd_ebit_oper",
+                              "unit=1;rptDate=" + pre_year_date.strftime("%Y-%m-%d") + ";rptType=1;currencyType=")
+            acct_rcv = w.wss(self.stockcodes, "acct_rcv",
+                             "unit=1;rptDate=" + pre_year_date.strftime("%Y-%m-%d") + ";rptType=1")
+            acct_rcv1 = w.wss(self.stockcodes, "acct_rcv",
+                             "unit=1;rptDate=" + pre_year_date1.strftime("%Y-%m-%d") + ";rptType=1")
+            inventory = w.wss(self.stockcodes, "inventories",
+                              "unit=1;rptDate="+ pre_year_date.strftime("%Y-%m-%d")+";rptType=1")
+            inventory1 = w.wss(self.stockcodes, "inventories",
+                              "unit=1;rptDate="+ pre_year_date1.strftime("%Y-%m-%d")+";rptType=1")
+            acc_payable = w.wss(self.stockcodes, "acct_payable",
+                                "unit=1;rptDate=" + pre_year_date.strftime("%Y-%m-%d") + ";rptType=1")
+            acc_payable1 = w.wss(self.stockcodes, "acct_payable",
+                                "unit=1;rptDate=" + pre_year_date1.strftime("%Y-%m-%d") + ";rptType=1")
+
+            if any([ebit_oper.ErrorCode, acct_rcv.ErrorCode, acct_rcv1.ErrorCode,
+                    inventory.ErrorCode, inventory1.ErrorCode, acc_payable.ErrorCode,acc_payable1.ErrorCode]):
+                raise Exception("数据提取异常")
+
+            cashbasedoperprofit = np.array(ebit_oper) - (np.array(acct_rcv) - np.array(acct_rcv1)) - (
+                np.array(inventory) - np.array(inventory1)) + (np.array(acc_payable) - np.array(acc_payable1))
+            deflate_f = FactorsZoo.deflate_factor(date, self.stockcodes, "ME")
+            cashprofit = cashbasedoperprofit / np.array(deflate_f)
+            return cashprofit.tolist()
+
+    class AssetGrowth(Factor):
+        def __init__(self, date, stockcodes, label):
+            """
+
+            :param date:
+            :param stockCodes:
+            """
+            Factor.__init__(self, date, stockcodes, label)
+
+        def get_data(self):
+            """
+            总资产增长率
+            :return:
+            """
+            date = self.date
+
+            asset_growth = w.wss(self.stockcodes, "fa_tagr", "tradeDate=" + date)
+            if asset_growth.ErrorCode != 0:
+                raise Exception("数据提取异常")
+            return asset_growth.Data[0]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
