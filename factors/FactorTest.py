@@ -68,7 +68,7 @@ class FactorTest:
 
             return df
 
-        def __init__(self,df, factor=None, control=None, weighting=None):
+        def __init__(self, df, factor=None, control=None, weighting=None):
             """
 
             :param factor:
@@ -158,11 +158,11 @@ class FactorTest:
             model = sm.OLS(y1, resid_x)
             results_x = model.fit()
 
-            return results_x.tvalues
+            return results_x.tvalues, results_x.params
 
     class AlphaTest:
 
-        def __init__(self, df , t_factors, c_factors, weighting=None ):
+        def __init__(self, df, t_factors, c_factors, weighting=None ):
             """
 
             :param df: 储存因子数据 DataFrame
