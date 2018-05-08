@@ -539,6 +539,107 @@ class FactorsZoo(object):
                 raise Exception("数据提取异常")
             return asset_growth.Data[0]
 
+    class CoKurtosis(Factor):
+        def __init__(self, date, stockcodes, label, window):
+            """
+
+            :param date:
+            :param stockcodes:
+            :param label:
+            :param window:
+            """
+            Factor.__init__(date, stockcodes, label)
+            self.window = window
+
+        def get_data(self):
+            """
+            获取共峰度数值
+            :return:
+            """
+            optstr = "ED-" + str(self.window) + "TD"
+            stock_data = w.wsd(self.stockcodes, "close", optstr, date, "Fill=Previous;PriceAdj=F")
+            mkt_data = w.wsd("000300.SH", "close", optstr, date, "Fill=Previous;PriceAdj=F")
+            if any(stock_data.ErrorCode, mkt_data.ErrorCode):
+                raise Exception("数据提取异常")
+            stock_data = DataFrame(np.array(stock_data.Data).T, index=stock_data.Times, columns=stock_data.Codes)
+            stock_ret = stock_data / stock_data.shift(1) - 1
+            mkt_data = DataFrame(np.array(mkt_data.Data).T, index=mkt_data.Times, columns=mkt_data.Codes)
+            mkt_ret = mkt_data / mkt_data.shift(1) - 1
+            cokurt = np.mean((stock_ret - stock_ret.mean()) * np.power(mkt_ret - mkt_ret.mean(), 3)) / (stock_ret.std()
+                                                                                             * np.power(mkt_ret.std(), 3))
+            return cokurt
+
+    class CoSkew(Factor):
+        def __init__(self, date, stockcodes, label, window):
+            """
+
+            :param date:
+            :param stockcodes:
+            :param label:
+            :param window:
+            """
+            Factor.__init__(date, stockcodes, label)
+            self.window = window
+
+        def get_data(self):
+            """
+
+            :return:
+            """
+            optstr = "ED-" + str(self.window) + "TD"
+            stock_data = w.wsd(self.stockcodes, "close", optstr, date, "Fill=Previous;PriceAdj=F")
+            mkt_data = w.wsd("000300.SH", "close", optstr, date, "Fill=Previous;PriceAdj=F")
+            if any(stock_data.ErrorCode, mkt_data.ErrorCode):
+                raise Exception("数据提取异常")
+            stock_data = DataFrame(np.array(stock_data.Data).T, index=stock_data.Times, columns=stock_data.Codes)
+            stock_ret = stock_data / stock_data.shift(1) - 1
+            mkt_data = DataFrame(np.array(mkt_data.Data).T, index=mkt_data.Times, columns=mkt_data.Codes)
+            mkt_ret = mkt_data / mkt_data.shift(1) - 1
+            coskew = np.mean((stock_ret - stock_ret.mean())*np.power(mkt_ret - mkt_ret.mean(), 2)) / (stock_ret.std()
+                                                                                                        * np.power(mkt_ret.std(), 2))
+            return coskew
+
+    class DownsizeBeta(Factor):
+        def __init__(self, date, stockcodes, label, window):
+            """
+
+            :param date:
+            :param stockcodes:
+            :param label:
+            :param window:
+            """
+            Factor.__init__(date, stockcodes, label)
+            self.window = window
+
+        def get_data(self):
+            """
+
+            :return:
+            """
+            optstr = "ED-" + str(self.window) + "TD"
+            stock_data = w.wsd(self.stockcodes, "close", optstr, date, "Fill=Previous;PriceAdj=F")
+            mkt_data = w.wsd("000300.SH", "close", optstr, date, "Fill=Previous;PriceAdj=F")
+            if any(stock_data.ErrorCode, mkt_data.ErrorCode):
+                raise Exception("数据提取异常")
+            stock_data = DataFrame(np.array(stock_data.Data).T, index=stock_data.Times, columns=stock_data.Codes)
+            stock_ret = stock_data / stock_data.shift(1) - 1
+            mkt_data = DataFrame(np.array(mkt_data.Data).T, index=mkt_data.Times, columns=mkt_data.Codes)
+            mkt_ret = mkt_data / mkt_data.shift(1) - 1
+            stock_ret['mkt'] = mkt_ret.values.tolist()
+            stock_ret = stock_ret[stock_ret['mkt'] < 0]
+            mkt_ret = mkt_ret[mkt_ret < 0]
+            downsize_beta = []
+            for f in self.stockcodes:
+                df = stock_ret[f].values
+                mkt = mkt_ret.values
+                downbeta = np.cov(df, mkt)[0][1]
+                downsize_beta.append(downbeta)
+
+            return downsize_beta
+
+
+
+
 
 
 
