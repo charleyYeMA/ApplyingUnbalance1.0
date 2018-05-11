@@ -4,6 +4,7 @@
 from WindPy import *
 from pandas import DataFrame
 from pandas.tseries.offsets import YearEnd
+from factors.BasicTool import CheckWindData
 import numpy as np
 
 w.start()
@@ -27,20 +28,30 @@ class StockPool:
         stock = w.wset("sectorconstituent", "date=" + self.date + ";sectorid=a001010f00000000")
         stockdata['Codes'] = stock.Data[1]
         # 剔除当期停牌的个股
-        status = w.wss(stockdata['Codes'], "trade_status", "tradeDate=" + self.date)
-        stockdata['status'] = status.Data[0]
+        filename = 'date_StockPool_select_stock_status0.csv'
+        if CheckWindData().check_file_data(self.date, 'StockPool', 'select_stock', 'status', 0):
+            stockdata['status'] = CheckWindData().get_file_data(filename)
+        else:
+            status = w.wss(stockdata['Codes'], "trade_status", "tradeDate=" + self.date)
+            CheckWindData(status).check_wind_data()
+            stockdata['status'] = status.Data[0]
+            DataFrame(stockdata['status']).to_csv(filename, encoding='gbk')
+
         df = DataFrame(stockdata)
         df = df[df['status'] == u'交易']
         # 剔除涨停的股票
         maxud = w.wss(df['Codes'].values.tolist(), "maxupordown", "tradeDate=" + self.date)
+        CheckWindData(maxud).check_wind_data()
         df['maxud'] = maxud.Data[0]
 
         df = df[df['maxud'] < 1]
         # 剔除上市未满三年的股票
         ipo_days = w.wss(df['Codes'].values.tolist(), "ipo_listdays", "tradeDate=" + self.date)
+        CheckWindData(ipo_days).check_wind_data()
         df['ipo_days'] = ipo_days.Data[0]
         df = df[df['ipo_days'] > 4 * 365]
 
+        date = self.date
         date_1 = datetime.strptime(date, "%Y-%m-%d")
         if date_1.month >= 5:
             pre_year_date = datetime.strptime(date, "%Y-%m-%d") - YearEnd(1)
@@ -75,7 +86,7 @@ class StockPool:
         df = df[df['ebit_oper2'] > 0]
 
         # 近三年FCF和营业收入的比值
-        fcf = w.wss(df['Codes'].values.tolist(), "fcff", "unit=1;rptDate="+ pre_year_date.strftime("%Y-%m-%d"))
+        fcf = w.wss(df['Codes'].values.tolist(), "fcff", "unit=1;rptDate=" + pre_year_date.strftime("%Y-%m-%d"))
         fcf1 = w.wss(df['Codes'].values.tolist(), "fcff", "unit=1;rptDate=" + pre_year_date1.strftime("%Y-%m-%d"))
         fcf2 = w.wss(df['Codes'].values.tolist(), "fcff", "unit=1;rptDate=" + pre_year_date2.strftime("%Y-%m-%d"))
 

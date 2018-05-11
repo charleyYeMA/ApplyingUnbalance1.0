@@ -35,7 +35,7 @@ for ds in dateseries.Data[0]:
     df['SIZE'] = size
     df['industry'] = industry
     # 因子行业中性处理
-    x = pd.get_dummies(df['inustry'])
+    x = pd.get_dummies(df['industry'])
     x = sm.add_constant(x)
     y = df['factor']
     model = sm.OLS(y, x)
@@ -58,8 +58,12 @@ for ds in dateseries.Data[0]:
 t_stats_unbi = np.array(hml_list).mean() / np.array(hml_list).std()
 t_stats_bi = np.array(hml_biv_list).mean() / np.array(hml_biv_list).std()
 
-t_stats_ind_unbi = np.array(hml_ind_list).mean() / np.array(hml_ind_list)
-t_stats_ind_bi = np.array(hml_ind_biv_list).mean() / np.array(hml_ind_biv_list)
+t_stats_ind_unbi = np.array(hml_ind_list).mean() / np.array(hml_ind_list).std()
+t_stats_ind_bi = np.array(hml_ind_biv_list).mean() / np.array(hml_ind_biv_list).std()
+print("单变量测试", t_stats_unbi)
+print("二元分类测试", t_stats_bi)
+print("单变量测试+行业中性", t_stats_ind_unbi)
+print("二元分类测试+行业中性", t_stats_ind_bi)
 
 
 
