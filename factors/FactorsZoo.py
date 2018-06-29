@@ -184,7 +184,7 @@ class FactorsZoo(object):
             :param date:
             :param stockCodes:
             """
-            Factor.__init__(self, date, stockcodes, label)
+            super().__init__(date, stockcodes, label)
             self.window = window
         def get_data(self):
             """
