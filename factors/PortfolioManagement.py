@@ -136,7 +136,7 @@ class PortfolioManagement:
 
     class OptKelly:
         """
-        学完凸优化再来搞
+        最优凯利
         """
         pass
 
