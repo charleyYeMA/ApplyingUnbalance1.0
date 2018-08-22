@@ -8,12 +8,11 @@ from factors.FactorPreprocess import FactorProcess
 from factors.FactorsZoo import FactorsZoo
 from pandas import DataFrame
 from factors.FactorPreprocess import FactorProcess
+import pandas as pd
 w.start()
 
 def run(date, date1):
 
-    #date1 = '2018-05-02'
-    #date = '2017-12-01'
     stock = StockPool(date1).select_stock()
     df = DataFrame()
     df['cash_net_oper_act'] = FactorsZoo.CashNetOperAct(date, stock, label='cash_net_oper_act').get_data()
@@ -66,7 +65,7 @@ def run(date, date1):
     df1['Codes'] = stock
     df1['alpha'] = alpha
     df1 = df1.sort_values(['alpha'], ascending=False).head(30)
-    df1.to_csv(date1+"test.csv", encoding='gbk')
+    return df1
 
 
 
@@ -75,15 +74,19 @@ def run(date, date1):
 
 
 if __name__ == '__main__':
-    starttime = "2012-02-01"
+    starttime = "2014-02-01"
     endtime = "2018-06-01"
     dateseries = w.tdays(starttime, endtime, "Period=M")
+    Stock = DataFrame()
     for dt in dateseries.Data[0]:
         date_data = w.tdaysoffset(-6, dt.strftime("%Y-%m-%d"), "Period=M")
         date = date_data.Data[0][0].strftime("%Y-%m-%d")
         date1 = dt.strftime("%Y-%m-%d")
         print(date1)
-        df1 = run(date,date1)
+        df1 = run(date, date1)
+        Stock = pd.concat([Stock, df1])
+    Stock.to_csv("stock.csv", encoding='gbk')
+
 
 
 
